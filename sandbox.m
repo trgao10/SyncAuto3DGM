@@ -7,42 +7,57 @@ close all
 path(pathdef);
 addpath(path,genpath([pwd '/utils/']));
 
-G = Mesh('off', './data/PNAS2011/D09_sas.off');
-G.draw();
+%% load 2 meshes to compare
+G1 = Mesh('off', './data/PNAS2011/D09_sas.off');
+G2 = Mesh('off', './data/PNAS2011/B03_sas.off');
 
-%%% explore fields in G using G."something"
-%%% G.V
-%%% G.F
-%%% size(G.V)  ---- check shape of G.V ---- should be 3-by-num of vertices
-%%% size(G.F)  ---- check shape of G.F ---- should be 3-by-num of faces
-clf
-%%% check function definition: type "help scatter3" in terminal
-scatter3(G.V(1,:), G.V(2,:), G.V(3,:), 1, 'g', 'filled');
+%% draw 2 meshes in the same figure (but not sync-ed)
+figure;
+subplot(1,2,1);
+G1.draw();
+subplot(1,2,2);
+G2.draw();
 
-%%%% draw mesh, and visualize a specific vertex
-% vIdx = [3000,3003,3005,3007,4000];
-vIdx = 1:G.nV;
-clf
-G.draw();
-hold on
-scatter3(G.V(1,vIdx), G.V(2,vIdx), G.V(3,vIdx), 20, 'g', 'filled');
+%% draw the 2 meshes in the same figure (sync-ed)
+%%%%% simply putting two meshes in the same view will cause trouble
+figure;
+h = zeros(1,2);
+h(1) = subplot(1,2,1);
+G1.draw();
+h(2) = subplot(1,2,2);
+G2.draw();
 
-%%%% perform pca on the vertices of mesh G
-[coeff, score, latent] = pca(G.V');
-clf
-G.draw();
-COM = mean(G.V,2);
-hold on
-scatter3(COM(1),COM(2),COM(3),20,'r','filled');
-pcaAxis1 = 2*sqrt(latent(1))*(coeff(:,1))+COM;
-scatter3(pcaAxis1(1),pcaAxis1(2),pcaAxis1(3),20,'g','filled');
-line([COM(1),pcaAxis1(1)],[COM(2),pcaAxis1(2)],[COM(3),pcaAxis1(3)],'color','g');
-pcaAxis2 = 2*sqrt(latent(2))*(coeff(:,2))+COM;
-scatter3(pcaAxis2(1),pcaAxis2(2),pcaAxis2(3),20,'b','filled');
-line([COM(1),pcaAxis2(1)],[COM(2),pcaAxis2(2)],[COM(3),pcaAxis2(3)],'color','b');
-pcaAxis3 = 2*sqrt(latent(3))*(coeff(:,3))+COM;
-scatter3(pcaAxis3(1),pcaAxis3(2),pcaAxis3(3),20,'m','filled');
-line([COM(1),pcaAxis3(1)],[COM(2),pcaAxis3(2)],[COM(3),pcaAxis3(3)],'color','m');
+Link = linkprop(h, {'CameraUpVector', 'CameraPosition', 'CameraTarget', 'CameraViewAngle'});
+setappdata(gcf, 'StoreTheLink', Link);
 
 
+%% so you need to "align" them before plotting them in the same view!
+%%%%% As a first attempt, let us at least translate them to the origin at
+%%%%% least; note that their scales are still different
+G1.V = G1.V-repmat(mean(G1.V,2), 1, G1.nV);
+G2.V = G2.V-repmat(mean(G2.V,2), 1, G2.nV);
+
+figure;
+h = zeros(1,2);
+h(1) = subplot(1,2,1);
+G1.draw();
+h(2) = subplot(1,2,2);
+G2.draw();
+
+Link = linkprop(h, {'CameraUpVector', 'CameraPosition', 'CameraTarget', 'CameraViewAngle'});
+setappdata(gcf, 'StoreTheLink', Link);
+
+%% let's try to scale them to have the same surface area!
+G1.Centralize('ScaleArea');
+G2.Centralize('ScaleArea');
+
+figure;
+h = zeros(1,2);
+h(1) = subplot(1,2,1);
+G1.draw();
+h(2) = subplot(1,2,2);
+G2.draw();
+
+Link = linkprop(h, {'CameraUpVector', 'CameraPosition', 'CameraTarget', 'CameraViewAngle'});
+setappdata(gcf, 'StoreTheLink', Link);
 
